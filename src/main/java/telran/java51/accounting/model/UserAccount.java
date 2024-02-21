@@ -36,11 +36,11 @@ public class UserAccount {
 	}
 
 	public boolean addRole(String role) {
-		return roles.add(role);
+		return roles.add(role.toUpperCase());
 	}
 
 	public boolean removeRole(String role) {
-		return roles.remove(role);
+		return roles.remove(role.toUpperCase());
 	}
 
 }

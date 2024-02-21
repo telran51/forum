@@ -5,6 +5,7 @@ import java.security.Principal;
 import java.util.Base64;
 
 import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ import telran.java51.accounting.model.UserAccount;
 
 @Component
 @RequiredArgsConstructor
+@Order(10)
 public class AuthenticationFilter implements Filter {
 
 	final UserAccountRepository userAccountRepository;
