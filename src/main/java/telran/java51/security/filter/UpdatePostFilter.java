@@ -14,10 +14,16 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import telran.java51.post.dao.PostRepository;
+import telran.java51.post.model.Post;
 
 @Component
-@Order(30)
-public class UpdateByOwnerFilter implements Filter {
+@Order(50)
+@RequiredArgsConstructor
+public class UpdatePostFilter implements Filter {
+	
+	final PostRepository postRepository;
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
@@ -27,8 +33,13 @@ public class UpdateByOwnerFilter implements Filter {
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
 			Principal principal = request.getUserPrincipal();
 			String[] arr = request.getServletPath().split("/");
-			String user = arr[arr.length - 1];
-			if (!principal.getName().equalsIgnoreCase(user)) {
+			String postId = arr[arr.length - 1];
+			Post post = postRepository.findById(postId).orElse(null);
+			if (post == null) {
+				response.sendError(404);
+				return;
+			}
+			if (!principal.getName().equals(post.getAuthor())) {
 				response.sendError(403);
 				return;
 			}
@@ -36,11 +47,10 @@ public class UpdateByOwnerFilter implements Filter {
 		chain.doFilter(request, response);
 
 	}
-
+	
 	private boolean checkEndPoint(String method, String path) {
-		return (HttpMethod.PUT.matches(method) && path.matches("/account/user/\\w+"))
-				|| (HttpMethod.POST.matches(method) && path.matches("/forum/post/\\w+"))
-				|| (HttpMethod.PUT.matches(method) && path.matches("/forum/post/\\w+/comment/\\w+"));
+		return HttpMethod.PUT.matches(method) && path.matches("/forum/post/\\w+");
+
 	}
 
 }
