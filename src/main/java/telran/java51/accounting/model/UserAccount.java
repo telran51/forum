@@ -20,11 +20,11 @@ public class UserAccount {
 	String firstName;
 	@Setter
 	String lastName;
-	Set<String> roles;
+	Set<Role> roles;
 	
 	public UserAccount() {
 		roles = new HashSet<>();
-		roles.add("USER");
+		addRole("USER");
 	}
 
 	public UserAccount(String login, String password, String firstName, String lastName) {
@@ -36,11 +36,11 @@ public class UserAccount {
 	}
 
 	public boolean addRole(String role) {
-		return roles.add(role);
+		return roles.add(Role.valueOf(role.toUpperCase()));
 	}
 
 	public boolean removeRole(String role) {
-		return roles.remove(role);
+		return roles.remove(Role.valueOf(role.toUpperCase()));
 	}
 
 }
