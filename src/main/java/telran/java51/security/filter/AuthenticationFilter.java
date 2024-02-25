@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import telran.java51.accounting.dao.UserAccountRepository;
 import telran.java51.accounting.model.UserAccount;
+import telran.java51.security.context.SecurityContext;
 import telran.java51.security.model.User;
 
 @Component
@@ -29,6 +30,7 @@ import telran.java51.security.model.User;
 public class AuthenticationFilter implements Filter {
 
 	final UserAccountRepository userAccountRepository;
+	final SecurityContext securityContext;
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
@@ -37,30 +39,33 @@ public class AuthenticationFilter implements Filter {
 		HttpServletResponse response = (HttpServletResponse) resp;
 
 		if (checkEndPoint(request.getMethod(), request.getServletPath())) {
-			UserAccount userAccount;
-			try {
-				String[] credentials = getCredentials(request.getHeader("Authorization"));
-				userAccount = userAccountRepository.findById(credentials[0])
-						.orElseThrow(RuntimeException::new);
-				if (!BCrypt.checkpw(credentials[1], userAccount.getPassword())) {
-					throw new RuntimeException();
+			String sessionId = request.getSession().getId();
+			User user = securityContext.getUserBySessionId(sessionId);
+			if (user == null) {
+				try {
+					String[] credentials = getCredentials(request.getHeader("Authorization"));
+					UserAccount userAccount = userAccountRepository.findById(credentials[0])
+							.orElseThrow(RuntimeException::new);
+					if (!BCrypt.checkpw(credentials[1], userAccount.getPassword())) {
+						throw new RuntimeException();
+					}
+					user = new User(userAccount.getLogin(), userAccount.getRoles());
+					securityContext.addUserSession(sessionId, user);
+				} catch (Exception e) {
+					response.sendError(401);
+					return;
 				}
-			} catch (Exception e) {
-				response.sendError(401);
-				return;
 			}
-			request = new WrappedRequest(request, userAccount.getLogin(), userAccount.getRoles());
+			request = new WrappedRequest(request, user.getName(), user.getRoles());
 		}
-		
+
 		chain.doFilter(request, response);
 
 	}
 
 	private boolean checkEndPoint(String method, String path) {
-		return !(
-				(HttpMethod.POST.matches(method) && path.matches("/account/register"))
-				|| path.matches("/forum/posts/\\w+(/\\w+)?")
-				);
+		return !((HttpMethod.POST.matches(method) && path.matches("/account/register"))
+				|| path.matches("/forum/posts/\\w+(/\\w+)?"));
 	}
 
 	private String[] getCredentials(String header) {
