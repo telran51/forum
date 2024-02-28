@@ -37,11 +37,14 @@ public class AuthorizationConfiguration {
 					.access(new WebExpressionAuthorizationManager("#author == authentication.name"))
 				.requestMatchers(HttpMethod.PUT, "/forum/post/{id}")
 //					.access(new WebExpressionAuthorizationManager("@customSecurity.checkPostAuthor(#id, authentication.name)"))
+//				.requestMatchers("/test/**").access((authentication, context) ->
+//			    new AuthorizationDecision(webSecurity.check(authentication.get(), context.getRequest())))
 					.access(new AuthorizationManager<T>() {
 
 						@Override
 						public AuthorizationDecision check(Supplier<Authentication> authentication, T object) {
 							// TODO Auto-generated method stub
+							authentication.get().getName();
 							return null;
 						}
 					})
