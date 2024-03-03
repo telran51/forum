@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 
@@ -22,6 +23,7 @@ public class AuthorizationConfiguration {
 	public SecurityFilterChain web(HttpSecurity http) throws Exception {
 		http.httpBasic(Customizer.withDefaults());
 		http.csrf(csrf -> csrf.disable());
+		http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
 		http.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers("/account/register", "/forum/posts/**")
 					.permitAll()
@@ -36,13 +38,11 @@ public class AuthorizationConfiguration {
 				.requestMatchers(HttpMethod.PUT, "/forum/post/{id}/comment/{author}")
 					.access(new WebExpressionAuthorizationManager("#author == authentication.name"))
 				.requestMatchers(HttpMethod.PUT, "/forum/post/{id}")
-//					.access(new WebExpressionAuthorizationManager("@customSecurity.checkPostAuthor(#id, authentication.name)"))
 					.access((authentication, context) ->
-					new AuthorizationDecision(webSecurity.checkPostAuthor(context.getVariables().get("id"), authentication.get().getName())))
+						new AuthorizationDecision(webSecurity.checkPostAuthor(context.getVariables().get("id"), authentication.get().getName())))
 				.requestMatchers(HttpMethod.DELETE, "/forum/post/{id}")
 					.access((authentication, context) -> {						
 						boolean checkAuthor = webSecurity.checkPostAuthor(context.getVariables().get("id"), authentication.get().getName()) ;
-//						boolean checkModerator = authentication.get().getAuthorities().containsAll(AuthorityUtils.createAuthorityList("ROLE_" + Role.MODERATOR.name()));
 						boolean checkModerator = context.getRequest().isUserInRole(Role.MODERATOR.name());
 						return new AuthorizationDecision(checkAuthor || checkModerator); 
 					})					

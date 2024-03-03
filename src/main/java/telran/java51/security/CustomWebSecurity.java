@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import telran.java51.post.dao.PostRepository;
 import telran.java51.post.model.Post;
 
-@Service("customSecurity")
+@Service
 @RequiredArgsConstructor
 public class CustomWebSecurity {
 	final PostRepository postRepository;
