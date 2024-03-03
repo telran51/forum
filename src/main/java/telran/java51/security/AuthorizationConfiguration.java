@@ -1,22 +1,22 @@
 package telran.java51.security;
 
-import java.util.function.Supplier;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
-import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 
+import lombok.RequiredArgsConstructor;
 import telran.java51.accounting.model.Role;
 
 @Configuration
+@RequiredArgsConstructor
 public class AuthorizationConfiguration {
+
+	final CustomWebSecurity webSecurity;
 
 	@Bean
 	public SecurityFilterChain web(HttpSecurity http) throws Exception {
@@ -37,17 +37,15 @@ public class AuthorizationConfiguration {
 					.access(new WebExpressionAuthorizationManager("#author == authentication.name"))
 				.requestMatchers(HttpMethod.PUT, "/forum/post/{id}")
 //					.access(new WebExpressionAuthorizationManager("@customSecurity.checkPostAuthor(#id, authentication.name)"))
-//				.requestMatchers("/test/**").access((authentication, context) ->
-//			    new AuthorizationDecision(webSecurity.check(authentication.get(), context.getRequest())))
-					.access(new AuthorizationManager<T>() {
-
-						@Override
-						public AuthorizationDecision check(Supplier<Authentication> authentication, T object) {
-							// TODO Auto-generated method stub
-							authentication.get().getName();
-							return null;
-						}
-					})
+					.access((authentication, context) ->
+					new AuthorizationDecision(webSecurity.checkPostAuthor(context.getVariables().get("id"), authentication.get().getName())))
+				.requestMatchers(HttpMethod.DELETE, "/forum/post/{id}")
+					.access((authentication, context) -> {						
+						boolean checkAuthor = webSecurity.checkPostAuthor(context.getVariables().get("id"), authentication.get().getName()) ;
+//						boolean checkModerator = authentication.get().getAuthorities().containsAll(AuthorityUtils.createAuthorityList("ROLE_" + Role.MODERATOR.name()));
+						boolean checkModerator = context.getRequest().isUserInRole(Role.MODERATOR.name());
+						return new AuthorizationDecision(checkAuthor || checkModerator); 
+					})					
 				.anyRequest()
 					.authenticated()
 		);
